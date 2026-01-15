@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -109,7 +108,8 @@ class NotificationService {
   Future<void> scheduleMedicineReminder(Medicine medicine) async {
     if (!medicine.isEnabled) return;
 
-    final notificationId = medicine.id.hashCode;
+    // Cancel existing reminders first
+    await cancelMedicineReminder(medicine);
 
     const androidDetails = AndroidNotificationDetails(
       'medicine_reminder_channel',
@@ -135,23 +135,37 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    final scheduledTime = _getNextScheduledTime(medicine.hour, medicine.minute);
+    // Schedule notifications for all reminder times
+    final reminderTimes = medicine.allReminderTimes;
+    for (int i = 0; i < reminderTimes.length; i++) {
+      final reminder = reminderTimes[i];
+      final notificationId = _generateNotificationId(medicine.id, i);
+      final scheduledTime = _getNextScheduledTime(reminder.hour, reminder.minute);
 
-    await _notifications.zonedSchedule(
-      notificationId,
-      '💊 Medicine Reminder',
-      'Time to take ${medicine.name} - ${medicine.dose}',
-      scheduledTime,
-      notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+      await _notifications.zonedSchedule(
+        notificationId,
+        '💊 Medicine Reminder',
+        'Time to take ${medicine.name} - ${medicine.dose}',
+        scheduledTime,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+  }
+
+  /// Generate unique notification ID for each reminder time
+  int _generateNotificationId(String medicineId, int reminderIndex) {
+    return '${medicineId}_$reminderIndex'.hashCode;
   }
 
   Future<void> cancelMedicineReminder(Medicine medicine) async {
-    await _notifications.cancel(medicine.id.hashCode);
+    // Cancel all possible notification IDs for this medicine (up to 10 reminders)
+    for (int i = 0; i < 10; i++) {
+      await _notifications.cancel(_generateNotificationId(medicine.id, i));
+    }
   }
 
   Future<void> cancelAllReminders() async {

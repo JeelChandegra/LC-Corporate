@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_colors.dart';
+import '../models/medicine.dart';
 import '../providers/medicine_provider.dart';
 import '../services/storage_service.dart';
 
@@ -20,7 +21,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final _nameController = TextEditingController();
   final _doseController = TextEditingController();
   
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  List<TimeOfDay> _selectedTimes = [TimeOfDay.now()];
   bool _isSaving = false;
 
   @override
@@ -41,7 +42,13 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       setState(() {
         _nameController.text = medicine.name;
         _doseController.text = medicine.dose;
-        _selectedTime = TimeOfDay(hour: medicine.hour, minute: medicine.minute);
+        // Load all reminder times
+        _selectedTimes = medicine.allReminderTimes
+            .map((r) => TimeOfDay(hour: r.hour, minute: r.minute))
+            .toList();
+        if (_selectedTimes.isEmpty) {
+          _selectedTimes = [TimeOfDay(hour: medicine.hour, minute: medicine.minute)];
+        }
       });
     }
   }
@@ -168,73 +175,119 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Reminder Time',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+        Row(
+          children: [
+            const Text(
+              'Reminder Times',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _addNewTime,
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text('Add Time'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        InkWell(
-          onTap: _selectTime,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border.all(color: AppColors.divider),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.access_time,
-                    color: AppColors.accent,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Selected Time',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatTime(_selectedTime),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.edit,
-                  color: AppColors.accent,
-                ),
-              ],
-            ),
-          ),
-        ),
+        ..._selectedTimes.asMap().entries.map((entry) {
+          final index = entry.key;
+          final time = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildTimeItem(time, index),
+          );
+        }),
       ],
     );
+  }
+
+  Widget _buildTimeItem(TimeOfDay time, int index) {
+    return InkWell(
+      onTap: () => _selectTime(index),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.divider),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.access_time,
+                color: AppColors.accent,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reminder ${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatTime(time),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: AppColors.accent),
+              onPressed: () => _selectTime(index),
+            ),
+            if (_selectedTimes.length > 1)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                onPressed: () => _removeTime(index),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addNewTime() {
+    setState(() {
+      // Add a new time 1 hour after the last one
+      final lastTime = _selectedTimes.last;
+      final newHour = (lastTime.hour + 1) % 24;
+      _selectedTimes.add(TimeOfDay(hour: newHour, minute: lastTime.minute));
+    });
+  }
+
+  void _removeTime(int index) {
+    if (_selectedTimes.length > 1) {
+      setState(() {
+        _selectedTimes.removeAt(index);
+      });
+    }
   }
 
   Widget _buildSaveButton() {
@@ -267,10 +320,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     );
   }
 
-  Future<void> _selectTime() async {
+  Future<void> _selectTime(int index) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: _selectedTime,
+      initialTime: _selectedTimes[index],
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -286,9 +339,9 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       },
     );
 
-    if (picked != null && picked != _selectedTime) {
+    if (picked != null && picked != _selectedTimes[index]) {
       setState(() {
-        _selectedTime = picked;
+        _selectedTimes[index] = picked;
       });
     }
   }
@@ -310,6 +363,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     });
 
     final provider = context.read<MedicineProvider>();
+    
+    // Convert TimeOfDay list to ReminderTime list
+    final reminderTimes = _selectedTimes
+        .map((t) => ReminderTime(hour: t.hour, minute: t.minute))
+        .toList();
+    
     bool success;
 
     if (widget.isEditing) {
@@ -317,15 +376,17 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
         id: widget.medicineId!,
         name: _nameController.text.trim(),
         dose: _doseController.text.trim(),
-        hour: _selectedTime.hour,
-        minute: _selectedTime.minute,
+        hour: _selectedTimes.first.hour,
+        minute: _selectedTimes.first.minute,
+        reminderTimes: reminderTimes,
       );
     } else {
       success = await provider.addMedicine(
         name: _nameController.text.trim(),
         dose: _doseController.text.trim(),
-        hour: _selectedTime.hour,
-        minute: _selectedTime.minute,
+        hour: _selectedTimes.first.hour,
+        minute: _selectedTimes.first.minute,
+        reminderTimes: reminderTimes,
       );
     }
 

@@ -10,6 +10,9 @@ class StorageService {
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(MedicineAdapter());
     }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(ReminderTimeAdapter());
+    }
     _box = await Hive.openBox<Medicine>(_boxName);
   }
 
