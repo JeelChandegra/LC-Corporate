@@ -6,14 +6,12 @@ class MedicineCard extends StatelessWidget {
   final Medicine medicine;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
-  final ValueChanged<bool>? onToggle;
 
   const MedicineCard({
     super.key,
     required this.medicine,
     this.onTap,
     this.onDelete,
-    this.onToggle,
   });
 
   @override
@@ -57,32 +55,26 @@ class MedicineCard extends StatelessWidget {
                     children: [
                       Text(
                         medicine.name,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: medicine.isEnabled
-                              ? AppColors.textPrimary
-                              : AppColors.disabled,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.medical_services_outlined,
                             size: 16,
-                            color: medicine.isEnabled
-                                ? AppColors.textSecondary
-                                : AppColors.disabled,
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             medicine.dose,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
-                              color: medicine.isEnabled
-                                  ? AppColors.textSecondary
-                                  : AppColors.disabled,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -90,11 +82,9 @@ class MedicineCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Switch(
-                  value: medicine.isEnabled,
-                  onChanged: onToggle,
-                  activeThumbColor: AppColors.accent,
-                  activeTrackColor: AppColors.accentLight,
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),
@@ -109,26 +99,24 @@ class MedicineCard extends StatelessWidget {
       width: 70,
       height: 70,
       decoration: BoxDecoration(
-        color: medicine.isEnabled
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : AppColors.disabled.withValues(alpha: 0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.access_time,
             size: 20,
-            color: medicine.isEnabled ? AppColors.primary : AppColors.disabled,
+            color: AppColors.primary,
           ),
           const SizedBox(height: 4),
           Text(
             medicine.formattedTime,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: medicine.isEnabled ? AppColors.primary : AppColors.disabled,
+              color: AppColors.primary,
             ),
             textAlign: TextAlign.center,
           ),

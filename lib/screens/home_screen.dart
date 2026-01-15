@@ -123,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 medicine: medicine,
                 onTap: () => _navigateToEditMedicine(context, medicine.id),
                 onDelete: () => _deleteMedicine(context, medicine.id),
-                onToggle: (value) => _toggleMedicine(context, medicine.id),
               );
             },
           ),
@@ -157,10 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-
-  void _toggleMedicine(BuildContext context, String id) {
-    context.read<MedicineProvider>().toggleMedicineStatus(id);
   }
 
   void _testNotification() async {
@@ -201,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('• Set reminders for each medicine'),
             Text('• Receive notifications at scheduled times'),
             Text('• Swipe left to delete a medicine'),
-            Text('• Toggle the switch to enable/disable reminders'),
+            Text('• Tap a medicine to edit it'),
           ],
         ),
         actions: [
