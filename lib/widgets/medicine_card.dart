@@ -79,22 +79,10 @@ class MedicineCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (medicine.allReminderTimes.length > 1) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          medicine.formattedTimeDetailed,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ],
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.chevron_right,
                   color: AppColors.textSecondary,
                 ),
@@ -107,9 +95,6 @@ class MedicineCard extends StatelessWidget {
   }
 
   Widget _buildTimeBadge() {
-    final times = medicine.allReminderTimes;
-    final hasMultipleTimes = times.length > 1;
-
     return Container(
       width: 70,
       height: 70,
@@ -120,31 +105,21 @@ class MedicineCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            hasMultipleTimes ? Icons.notifications_active : Icons.access_time,
+          const Icon(
+            Icons.access_time,
             size: 20,
             color: AppColors.primary,
           ),
           const SizedBox(height: 4),
-          if (hasMultipleTimes)
-            Text(
-              '${times.length}x',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            )
-          else
-            Text(
-              times.first.formattedTime,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            medicine.formattedTime,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
             ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

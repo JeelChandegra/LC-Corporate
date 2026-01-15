@@ -50,7 +50,6 @@ class MedicineProvider extends ChangeNotifier {
     required String dose,
     required int hour,
     required int minute,
-    List<ReminderTime>? reminderTimes,
   }) async {
     try {
       final medicine = Medicine(
@@ -59,7 +58,6 @@ class MedicineProvider extends ChangeNotifier {
         dose: dose,
         hour: hour,
         minute: minute,
-        reminderTimes: reminderTimes,
       );
 
       await _storageService.addMedicine(medicine);
@@ -82,7 +80,6 @@ class MedicineProvider extends ChangeNotifier {
     required int hour,
     required int minute,
     bool? isEnabled,
-    List<ReminderTime>? reminderTimes,
   }) async {
     try {
       final index = _medicines.indexWhere((m) => m.id == id);
@@ -98,7 +95,6 @@ class MedicineProvider extends ChangeNotifier {
         hour: hour,
         minute: minute,
         isEnabled: isEnabled,
-        reminderTimes: reminderTimes,
       );
 
       await _storageService.updateMedicine(updated);

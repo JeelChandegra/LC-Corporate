@@ -108,8 +108,7 @@ class NotificationService {
   Future<void> scheduleMedicineReminder(Medicine medicine) async {
     if (!medicine.isEnabled) return;
 
-    // Cancel existing reminders first
-    await cancelMedicineReminder(medicine);
+    final notificationId = medicine.id.hashCode;
 
     const androidDetails = AndroidNotificationDetails(
       'medicine_reminder_channel',
@@ -135,37 +134,23 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Schedule notifications for all reminder times
-    final reminderTimes = medicine.allReminderTimes;
-    for (int i = 0; i < reminderTimes.length; i++) {
-      final reminder = reminderTimes[i];
-      final notificationId = _generateNotificationId(medicine.id, i);
-      final scheduledTime = _getNextScheduledTime(reminder.hour, reminder.minute);
+    final scheduledTime = _getNextScheduledTime(medicine.hour, medicine.minute);
 
-      await _notifications.zonedSchedule(
-        notificationId,
-        '💊 Medicine Reminder',
-        'Time to take ${medicine.name} - ${medicine.dose}',
-        scheduledTime,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        matchDateTimeComponents: DateTimeComponents.time,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    }
-  }
-
-  /// Generate unique notification ID for each reminder time
-  int _generateNotificationId(String medicineId, int reminderIndex) {
-    return '${medicineId}_$reminderIndex'.hashCode;
+    await _notifications.zonedSchedule(
+      notificationId,
+      '💊 Medicine Reminder',
+      'Time to take ${medicine.name} - ${medicine.dose}',
+      scheduledTime,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 
   Future<void> cancelMedicineReminder(Medicine medicine) async {
-    // Cancel all possible notification IDs for this medicine (up to 10 reminders)
-    for (int i = 0; i < 10; i++) {
-      await _notifications.cancel(_generateNotificationId(medicine.id, i));
-    }
+    await _notifications.cancel(medicine.id.hashCode);
   }
 
   Future<void> cancelAllReminders() async {
