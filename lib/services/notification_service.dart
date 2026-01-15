@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:permission_handler/permission_handler.dart';
 import '../models/medicine.dart';
 
@@ -18,8 +20,12 @@ class NotificationService {
   Future<void> init() async {
     if (_isInitialized) return;
 
-    tz_data.initializeTimeZones();
-    await _configureLocalTimeZone();
+    try {
+      tz_data.initializeTimeZones();
+      await _configureLocalTimeZone();
+    } catch (e) {
+      debugPrint('Error initializing timezone: $e');
+    }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -46,31 +52,11 @@ class NotificationService {
 
   Future<void> _configureLocalTimeZone() async {
     try {
-      final timeZoneName = DateTime.now().timeZoneName;
-      try {
-        tz.setLocalLocation(tz.getLocation(timeZoneName));
-      } catch (e) {
-        final offset = DateTime.now().timeZoneOffset;
-        final offsetHours = offset.inHours;
-        String location;
-        if (offsetHours >= 5 && offsetHours <= 6) {
-          location = 'Asia/Kolkata';
-        } else if (offsetHours == 0) {
-          location = 'UTC';
-        } else if (offsetHours == -5) {
-          location = 'America/New_York';
-        } else if (offsetHours == -8) {
-          location = 'America/Los_Angeles';
-        } else if (offsetHours == 1) {
-          location = 'Europe/London';
-        } else if (offsetHours == 8) {
-          location = 'Asia/Singapore';
-        } else {
-          location = 'UTC';
-        }
-        tz.setLocalLocation(tz.getLocation(location));
-      }
+      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
     } catch (e) {
+      debugPrint('Error getting timezone: $e');
+      // Fallback to UTC if timezone detection fails
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
   }
@@ -108,49 +94,58 @@ class NotificationService {
   Future<void> scheduleMedicineReminder(Medicine medicine) async {
     if (!medicine.isEnabled) return;
 
-    final notificationId = medicine.id.hashCode;
+    try {
+      final notificationId = medicine.id.hashCode;
 
-    const androidDetails = AndroidNotificationDetails(
-      'medicine_reminder_channel',
-      'Medicine Reminders',
-      channelDescription: 'Notifications for medicine reminders',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration: true,
-      playSound: true,
-      icon: '@mipmap/ic_launcher',
-      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      styleInformation: BigTextStyleInformation(''),
-    );
+      const androidDetails = AndroidNotificationDetails(
+        'medicine_reminder_channel',
+        'Medicine Reminders',
+        channelDescription: 'Notifications for medicine reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        icon: '@mipmap/ic_launcher',
+        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        styleInformation: BigTextStyleInformation(''),
+      );
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
 
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
-    final scheduledTime = _getNextScheduledTime(medicine.hour, medicine.minute);
+      final scheduledTime = _getNextScheduledTime(medicine.hour, medicine.minute);
 
-    await _notifications.zonedSchedule(
-      notificationId,
-      '💊 Medicine Reminder',
-      'Time to take ${medicine.name} - ${medicine.dose}',
-      scheduledTime,
-      notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+      await _notifications.zonedSchedule(
+        notificationId,
+        '💊 Medicine Reminder',
+        'Time to take ${medicine.name} - ${medicine.dose}',
+        scheduledTime,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      debugPrint('Error scheduling notification: $e');
+      // Notification scheduling failed, but medicine is still saved
+    }
   }
 
   Future<void> cancelMedicineReminder(Medicine medicine) async {
-    await _notifications.cancel(medicine.id.hashCode);
+    try {
+      await _notifications.cancel(medicine.id.hashCode);
+    } catch (e) {
+      debugPrint('Error canceling notification: $e');
+    }
   }
 
   Future<void> cancelAllReminders() async {
