@@ -27,7 +27,9 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   void initState() {
     super.initState();
     if (widget.isEditing) {
-      _loadExistingMedicine();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadExistingMedicine();
+      });
     }
   }
 
@@ -36,9 +38,11 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     final medicine = storageService.getMedicine(widget.medicineId!);
     
     if (medicine != null) {
-      _nameController.text = medicine.name;
-      _doseController.text = medicine.dose;
-      _selectedTime = TimeOfDay(hour: medicine.hour, minute: medicine.minute);
+      setState(() {
+        _nameController.text = medicine.name;
+        _doseController.text = medicine.dose;
+        _selectedTime = TimeOfDay(hour: medicine.hour, minute: medicine.minute);
+      });
     }
   }
 
